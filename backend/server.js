@@ -57,9 +57,19 @@ const BookingSchema = new mongoose.Schema({
   bookingDate: { type: Date, default: Date.now }
 });
 
+const MessageSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  message: String,
+  fileData: String,
+  fileName: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('User', UserSchema);
 const Tour = mongoose.model('Tour', TourSchema);
 const Booking = mongoose.model('Booking', BookingSchema);
+const Message = mongoose.model('Message', MessageSchema);
 
 // ============ MIDDLEWARE ============
 const auth = async (req, res, next) => {
@@ -149,6 +159,18 @@ app.put('/bookings/:id/cancel', auth, async (req, res) => {
   res.json({ success: true });
 });
 
+// ============ MESSAGES ============
+app.post('/messages', async (req, res) => {
+  try {
+    const { name, email, message, fileData, fileName } = req.body;
+    if (!name || !email || !message) return res.status(400).json({ message: 'Name, email, and message are required' });
+    const newMessage = await Message.create({ name, email, message, fileData, fileName });
+    res.status(201).json({ success: true, message: 'Message sent successfully', data: newMessage });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // ============ ADMIN ROUTES ============
 app.get('/admin/stats', adminAuth, async (req, res) => {
   const totalBookings = await Booking.countDocuments();
@@ -194,6 +216,11 @@ app.delete('/admin/bookings/:id', adminAuth, async (req, res) => {
 app.get('/admin/users', adminAuth, async (req, res) => {
   const users = await User.find().select('-password');
   res.json({ success: true, users });
+});
+
+app.get('/admin/messages', adminAuth, async (req, res) => {
+  const messages = await Message.find().sort({ createdAt: -1 });
+  res.json({ success: true, messages });
 });
 
 // ============ SEED DATA ============

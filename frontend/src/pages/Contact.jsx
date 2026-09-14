@@ -1,4 +1,5 @@
 import { useState } from "react";
+import API from "../services/api";
 import {
   FaPhoneAlt,
   FaEnvelope,
@@ -16,9 +17,13 @@ export default function Contact() {
     email: "",
     message: "",
     file: null,
+    fileData: "",
+    fileName: "",
   });
 
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,21 +32,52 @@ export default function Contact() {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setForm((prev) => ({ ...prev, file }));
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError("File size should be less than 5MB");
+        e.target.value = "";
+        return;
+      }
+      setError("");
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        setForm((prev) => ({ 
+          ...prev, 
+          file, 
+          fileData: reader.result, 
+          fileName: file.name 
+        }));
+      };
+    } else {
+      setForm((prev) => ({ ...prev, file: null, fileData: "", fileName: "" }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    // Here you would normally send the form data including the file to your backend/admin
-    console.log("Form submitted:", form);
-    
-    setSent(true);
-    setTimeout(() => setSent(false), 2000);
+    try {
+      await API.post("/messages", { 
+        name: form.name, 
+        email: form.email, 
+        message: form.message,
+        fileData: form.fileData,
+        fileName: form.fileName
+      });
+      
+      setSent(true);
+      setTimeout(() => setSent(false), 2000);
 
-    setForm({ name: "", email: "", message: "", file: null });
-    // Reset file input
-    e.target.reset();
+      setForm({ name: "", email: "", message: "", file: null, fileData: "", fileName: "" });
+      e.target.reset();
+    } catch (err) {
+      setError(err.response?.data?.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,7 +110,7 @@ export default function Contact() {
               <FaEnvelope className="text-orange-400" />
               <span>
                 <span className="text-orange-400 font-semibold">Email:</span>{" "}
-                info@travelagency.com
+                rahilakareem389@gmail.com
               </span>
             </p>
 
@@ -98,8 +134,14 @@ export default function Contact() {
           </h2>
 
           {sent && (
-            <div className="mb-4 text-green-400 text-center font-semibold">
+            <div className="mb-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-400 text-center font-semibold">
               ✅ Message Sent Successfully!
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-500 text-center font-semibold">
+              ❌ {error}
             </div>
           )}
 
@@ -164,10 +206,11 @@ export default function Contact() {
             {/* BUTTON */}
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-yellow-400 text-black font-bold py-3 rounded-lg transition"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-yellow-400 text-black font-bold py-3 rounded-lg transition disabled:opacity-50"
             >
               <FaPaperPlane />
-              Send Message
+              {loading ? "Sending..." : "Send Message"}
             </button>
 
           </form>

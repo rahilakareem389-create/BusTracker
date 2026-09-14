@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Bus, Ticket, Users, DollarSign, TrendingUp, 
-  CheckCircle, XCircle, Trash2, Eye, LogOut, RefreshCw 
+  CheckCircle, XCircle, Trash2, Eye, LogOut, RefreshCw, MessageSquare, Paperclip
 } from "lucide-react";
-import { getAdminStats, getAllBookings, updateBookingStatus, deleteBooking } from "../services/api";
+import { getAdminStats, getAllBookings, updateBookingStatus, deleteBooking, getAdminMessages } from "../services/api";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalBookings: 0, totalUsers: 0, totalRevenue: 0, pendingBookings: 0
   });
   const [bookings, setBookings] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -51,12 +52,14 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [statsData, bookingsData] = await Promise.all([
+      const [statsData, bookingsData, messagesData] = await Promise.all([
         getAdminStats(),
-        getAllBookings()
+        getAllBookings(),
+        getAdminMessages()
       ]);
       setStats(statsData);
       setBookings(bookingsData);
+      setMessages(messagesData);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -222,6 +225,51 @@ const AdminDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Messages Table */}
+        <div className="bg-gray-900 rounded-xl border border-gray-800 mt-8">
+          <div className="p-4 border-b border-gray-800 flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-orange-500" />
+            <h3 className="text-lg font-semibold text-white">Contact Messages</h3>
+          </div>
+          <div className="p-4 overflow-x-auto">
+            {messages.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">No messages found</div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-800">
+                  <tr>
+                    <th className="p-3 text-left text-xs text-gray-400">Date</th>
+                    <th className="p-3 text-left text-xs text-gray-400">Name</th>
+                    <th className="p-3 text-left text-xs text-gray-400">Email</th>
+                    <th className="p-3 text-left text-xs text-gray-400">Message</th>
+                    <th className="p-3 text-left text-xs text-gray-400">Attachment</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {messages.map((msg) => (
+                    <tr key={msg._id} className="border-b border-gray-800 hover:bg-gray-800/50">
+                      <td className="p-3 text-gray-400 text-sm">{new Date(msg.createdAt).toLocaleDateString()}</td>
+                      <td className="p-3 text-white text-sm">{msg.name}</td>
+                      <td className="p-3 text-gray-400 text-sm">{msg.email}</td>
+                      <td className="p-3 text-gray-300 text-sm max-w-md truncate" title={msg.message}>{msg.message}</td>
+                      <td className="p-3">
+                        {msg.fileData ? (
+                          <a href={msg.fileData} download={msg.fileName || "attachment"} className="text-orange-500 hover:underline text-sm flex items-center gap-1">
+                            <Paperclip size={14} /> Download
+                          </a>
+                        ) : (
+                          <span className="text-gray-600 text-xs">None</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* Modal */}

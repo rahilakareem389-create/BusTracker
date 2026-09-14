@@ -93,6 +93,11 @@ export const deleteBooking = async (bookingId) => {
   return data;
 };
 
+export const getAdminMessages = async () => {
+  const { data } = await API.get('/admin/messages');
+  return data.messages || [];
+};
+
 // ============ TOUR FUNCTIONS ============
 export const getTours = async () => {
   const { data } = await API.get('/tours');
