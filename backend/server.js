@@ -220,6 +220,10 @@ setTimeout(seedData, 2000);
 
 app.get('/health', (req, res) => res.json({ status: 'OK' }));
 
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to BusTracker API! The backend is running successfully on Vercel.' });
+});
+
 // ============ PORT 5000 PE SERVER START KARO ============
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
